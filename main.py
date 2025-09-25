@@ -23,13 +23,18 @@ def read_pdf(file):
 
 #-----------------modelInitiliazation---------------------------
 load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv("OPENAI_API_KEY_2")  #replace with _n where n=1,2,3 acoording model no
+
+model1 = "deepseek/deepseek-chat-v3.1:free"
+model2 = "google/gemini-2.5-flash-image-preview"
+model3 = "openai/gpt-oss-20b:free"
+
+
 client = httpx.Client(verify=False)
 
 llm = ChatOpenAI(
 base_url="https://openrouter.ai/api/v1",
-model = "deepseek/deepseek-chat-v3.1:free",
-#model = "x-ai/grok-4-fast:free",
+model = model2,
 openai_api_key=api_key, 
 http_client =  client,
 temperature=0.75
@@ -128,7 +133,7 @@ with st.spinner("Processing document..."):
                 for alt_text, image_url in image_matches:
                     try:
                         # Use st.image for better control (resizes, handles errors)
-                        st.image(image_url, caption=alt_text or "Generated Image", use_column_width=True)
+                        st.image(image_url, caption=alt_text or "Generated Image", use_container_width=True)
                     except Exception as e:
                         st.error(f"Failed to load image from {image_url}: {e}")
                         # Fallback: Try embedding in Markdown

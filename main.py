@@ -45,8 +45,10 @@ while 1:
     previous_chat+=f""" user : {user_input}
                         chatbot : {response.content}"""
 
-    print(" ")
+    
     print(response.content)
-
+    print(" ")
+    print(" ")
+    print(" ")
 
 

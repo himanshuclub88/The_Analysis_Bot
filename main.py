@@ -6,6 +6,7 @@ import streamlit as st
 from io import StringIO
 from PyPDF2 import PdfReader
 import json
+import re
 
 #--------------udf-------------------------------------
 # Function to extract text from PDF
@@ -28,6 +29,7 @@ client = httpx.Client(verify=False)
 llm = ChatOpenAI(
 base_url="https://openrouter.ai/api/v1",
 model = "deepseek/deepseek-chat-v3.1:free",
+#model = "x-ai/grok-4-fast:free",
 openai_api_key=api_key, 
 http_client =  client,
 temperature=0.75
@@ -109,12 +111,38 @@ with st.spinner("Processing document..."):
         st.session_state.chat_history.append({"role": "user", "content": user_input})
         st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
         
-    
-    
+        #using image handler
         with st.chat_message("bot"):
-            st.markdown(bot_reply)
+            # Extract potential image URLs from bot_reply using regex
+            image_matches = re.findall(r'!\[([^\]]*)\]\((https?://[^\s)]+)\)', bot_reply)
+
+            if image_matches:
+                # Split text and images for better rendering
+                # Remove image Markdown from text to avoid double-rendering
+                clean_text = re.sub(r'!\[([^\]]*)\]\((https?://[^\s)]+)\)', '', bot_reply).strip()
+
+                if clean_text:
+                    st.markdown(clean_text, unsafe_allow_html=True)  # Allow HTML/Markdown with images removed
+
+                # Render each extracted image
+                for alt_text, image_url in image_matches:
+                    try:
+                        # Use st.image for better control (resizes, handles errors)
+                        st.image(image_url, caption=alt_text or "Generated Image", use_column_width=True)
+                    except Exception as e:
+                        st.error(f"Failed to load image from {image_url}: {e}")
+                        # Fallback: Try embedding in Markdown
+                        st.markdown(f"![{alt_text}]({image_url})")
+            else:
+                # No images: Just render full Markdown
+                st.markdown(bot_reply, unsafe_allow_html=True)
     
+
+        # with st.chat_message("bot"):
+        #     st.markdown(bot_reply)
+    
+
+        
         #debuging
         print(st.session_state.chat_history)
         print("\n")
-        print(st.session_state.file_text)

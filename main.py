@@ -63,19 +63,42 @@ for message in st.session_state.chat_history:
 
 # File input------------------
 with st.sidebar:
-    st.header("📂 Upload File (Optional)")
-    uploaded_file = st.file_uploader("Upload PDF or TXT", type=["pdf", "txt", "json"])
+
+    text_extensions = [
+    # Plain text
+    "txt", "log", "cfg", "ini", "conf", "bat", "cmd", "env",
+
+    # Programming languages
+    "py", "java", "c", "cpp", "h", "hpp", "cs", "php", "rb", "go", "rs", "swift", "kt", "m", "scala", "sh", "pl", "r", "ts", "dart",
+
+    # Web files
+    "html", "htm", "css", "js", "json", "xml", "yaml", "yml", "md", "jsp", "asp", "aspx", "tsv",
+
+    # Data files
+    "csv", "tsv", "sql", "toml", "ini",
+
+    #additional
+    "pdf", "json"
+    ]
+
     
+    st.header("📂 Upload File (Optional)")
+    uploaded_file = st.file_uploader("Upload PDF or TXT", type=text_extensions)
+   
     if uploaded_file:
         if uploaded_file.type == "application/pdf":
             st.session_state.file_text = read_pdf(uploaded_file)
-        elif uploaded_file.type == "text/plain":
-            stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
-            st.session_state.file_text = stringio.read()
+            
         elif uploaded_file.type == "application/json":
             st.session_state.file_text = json.load(uploaded_file)
+            
+        elif uploaded_file.type == "text/":
+            stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+            st.session_state.file_text = stringio.read()
+            
         else:
-            st.error("Unsupported file type")
+            st.session_state.file_text=uploaded_file.read().decode("utf-8")
+
 
         st.success("✅ File uploaded and content added to context.")
         st.markdown("**Content of uploaded file:**")
@@ -131,6 +154,9 @@ with st.spinner("Processing document..."):
         with st.chat_message("bot"):
             placeholder = st.empty()          # ← this will be updated as chunks arrive
             full_text = ""
+
+            import time
+            time.sleep(0.01)
 
             for chunk in llm.stream(prompt):  
                 full_text += chunk.content

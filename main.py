@@ -3,6 +3,22 @@ import os
 import httpx
 from dotenv import load_dotenv
 import streamlit as st
+from io import StringIO
+from PyPDF2 import PdfReader
+import json
+
+#--------------udf-------------------------------------
+# Function to extract text from PDF
+def read_pdf(file):
+    pdf = PdfReader(file)
+    text = ""
+    for page in pdf.pages:
+        text += page.extract_text()
+    return text
+
+#-----------------modelInitiliazation---------------------------
+
+
 
 #-----------------modelInitiliazation---------------------------
 load_dotenv()
@@ -26,9 +42,32 @@ st.title("🤖 AI Chatbot - TCS GenAI")
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
+if "file_text" not in st.session_state:
+    st.session_state.file_text = ""
+
 for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+
+# File input
+with st.sidebar:
+    st.header("📂 Upload File (Optional)")
+    uploaded_file = st.file_uploader("Upload PDF or TXT", type=["pdf", "txt", "json"])
+    
+    if uploaded_file:
+        if uploaded_file.type == "application/pdf":
+            st.session_state.file_text = read_pdf(uploaded_file)
+        elif uploaded_file.type == "text/plain":
+            stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+            st.session_state.file_text = stringio.read()
+        elif uploaded_file.type == "application/json":
+            st.session_state.file_text = json.load(uploaded_file)
+        else:
+            st.error("Unsupported file type")
+
+        st.success("✅ File uploaded and content added to context.")
+        st.markdown("**Content of uploaded file:**")
+        st.text_area("File content", st.session_state.file_text, height=300)
 
 
 #text input
@@ -54,6 +93,9 @@ with st.spinner("Processing document..."):
         Previous conversation:
         {previous_chat}
     
+        Content from uploaded file (if any):
+        {st.session_state.file_text}
+    
         Current user input:
         {user_input}
     
@@ -75,3 +117,4 @@ with st.spinner("Processing document..."):
         #debuging
         print(st.session_state.chat_history)
         print("\n")
+        print(st.session_state.file_text)

@@ -49,6 +49,5 @@ while 1:
     print(response.content)
     print(" ")
     print(" ")
-    print(" ")
 
 

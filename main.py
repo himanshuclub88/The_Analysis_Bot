@@ -45,7 +45,6 @@ temperature=0.90,
 streaming=True,
 )
 
-#-----------------------------------------------------------------
 
 #------------------UI-------------------------------------------
 st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
@@ -60,6 +59,9 @@ if "file_text" not in st.session_state:
 for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+
+
+#--------------------------------------------input------------------------------------------
 
 # File input------------------
 with st.sidebar:
@@ -105,8 +107,10 @@ with st.sidebar:
         st.text_area("File content", st.session_state.file_text, height=300)
 
 
-#text input--------
+#text input------------------------
 user_input = st.chat_input("Ask something...")
+
+
 
 #-----------------promtingLogic------------------------------------
 with st.spinner("Processing document..."):

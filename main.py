@@ -6,7 +6,6 @@ import streamlit as st
 from io import StringIO
 from PyPDF2 import PdfReader
 import json
-import re
 
 #--------------udf-------------------------------------
 # Function to extract text from PDF
@@ -17,27 +16,33 @@ def read_pdf(file):
         text += page.extract_text()
     return text
 
-#-----------------modelInitiliazation---------------------------
+#-----------------modelSelection---------------------------
 
+n = 4     # can be 1, 2, 3 or 4
 
-
-#-----------------modelInitiliazation---------------------------
 load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY_2")  #replace with _n where n=1,2,3 acoording model no
+api_key = os.getenv(f"OPENAI_API_KEY_{n}")  # Will fetch OPENAI_API_KEY_1, _2, or _3
 
-model1 = "deepseek/deepseek-chat-v3.1:free"
-model2 = "google/gemini-2.5-flash-image-preview"
-model3 = "openai/gpt-oss-20b:free"
+models = {
+    1: "deepseek/deepseek-chat-v3.1:free",
+    2: "google/gemini-2.5-flash-image-preview",
+    3: "openai/gpt-oss-20b:free",
+    4: "deepseek/deepseek-chat-v3.1:free"
+}
+
+
+#-----------------modelInitiliazation---------------------------
 
 
 client = httpx.Client(verify=False)
 
 llm = ChatOpenAI(
 base_url="https://openrouter.ai/api/v1",
-model = model2,
+model = models.get(n),
 openai_api_key=api_key, 
 http_client =  client,
-temperature=0.75
+temperature=0.90,
+streaming=True,
 )
 
 #-----------------------------------------------------------------
@@ -56,7 +61,7 @@ for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# File input
+# File input------------------
 with st.sidebar:
     st.header("📂 Upload File (Optional)")
     uploaded_file = st.file_uploader("Upload PDF or TXT", type=["pdf", "txt", "json"])
@@ -77,7 +82,7 @@ with st.sidebar:
         st.text_area("File content", st.session_state.file_text, height=300)
 
 
-#text input
+#text input--------
 user_input = st.chat_input("Ask something...")
 
 #-----------------promtingLogic------------------------------------
@@ -107,47 +112,41 @@ with st.spinner("Processing document..."):
         {user_input}
     
         Respond as the chatbot:"""
-    
-        # Get response from LLM
-        response = llm.invoke(prompt)
-        bot_reply = response.content if hasattr(response, 'content') else str(response)
-    
-        # Append bot reply to chat history
-        st.session_state.chat_history.append({"role": "user", "content": user_input})
-        st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
-        
-        #using image handler
-        with st.chat_message("bot"):
-            # Extract potential image URLs from bot_reply using regex
-            image_matches = re.findall(r'!\[([^\]]*)\]\((https?://[^\s)]+)\)', bot_reply)
 
-            if image_matches:
-                # Split text and images for better rendering
-                # Remove image Markdown from text to avoid double-rendering
-                clean_text = re.sub(r'!\[([^\]]*)\]\((https?://[^\s)]+)\)', '', bot_reply).strip()
-
-                if clean_text:
-                    st.markdown(clean_text, unsafe_allow_html=True)  # Allow HTML/Markdown with images removed
-
-                # Render each extracted image
-                for alt_text, image_url in image_matches:
-                    try:
-                        # Use st.image for better control (resizes, handles errors)
-                        st.image(image_url, caption=alt_text or "Generated Image", use_container_width=True)
-                    except Exception as e:
-                        st.error(f"Failed to load image from {image_url}: {e}")
-                        # Fallback: Try embedding in Markdown
-                        st.markdown(f"![{alt_text}]({image_url})")
-            else:
-                # No images: Just render full Markdown
-                st.markdown(bot_reply, unsafe_allow_html=True)
+#--------------------------NormalOutput-----------------------------------------------------------    
+        # # Get response from LLM
+        # response = llm.invoke(prompt)
+        # bot_reply = response.content if hasattr(response, 'content') else str(response)
     
+        # # Append bot reply to chat history
+        # st.session_state.chat_history.append({"role": "user", "content": user_input})
+        # st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
 
         # with st.chat_message("bot"):
         #     st.markdown(bot_reply)
+        
+
+
+#-------------------------------STREAMING_output----------------------------------------------------------
+        with st.chat_message("bot"):
+            placeholder = st.empty()          # ← this will be updated as chunks arrive
+            full_text = ""
+
+            for chunk in llm.stream(prompt):  
+                full_text += chunk.content
+                placeholder.markdown(full_text)
+
+            # After streaming, store the full reply in history
+            st.session_state.chat_history.append({"role": "user", "content": user_input})
+            st.session_state.chat_history.append({"role": "bot", "content": full_text})
+#-----------------------------------------END-------------------------------------------------------------
+
+
+        
     
 
         
         #debuging
         print(st.session_state.chat_history)
         print("\n")
+        #print(response)

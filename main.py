@@ -63,8 +63,8 @@ streaming=True,
 
 
 #------------------UI-------------------------------------------
-st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
-st.title("🤖 AI Chatbot - TCS GenAI")
+st.set_page_config(page_title="The Analysis Bot", page_icon="🔍")
+st.title("🔍📈 The Analysis Bot")
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -86,73 +86,74 @@ for message in st.session_state.chat_history:
 
 # File input------------------
 if not st.session_state.file_uploaded:
+    with st.spinner("Processing document..."):
 
-#File extensions------------------------------------------
-    text_extensions = [
-    # Plain text
-    "txt", "log", "cfg", "ini", "conf", "bat", "cmd", "env",
+    #File extensions------------------------------------------
+        text_extensions = [
+        # Plain text
+        "txt", "log", "cfg", "ini", "conf", "bat", "cmd", "env",
 
-    # Programming languages
-    "py", "java", "c", "cpp", "h", "hpp", "cs", "php", "rb", "go", "rs", "swift", "kt", "m", "scala", "sh", "pl", "r", "ts", "dart",
+        # Programming languages
+        "py", "java", "c", "cpp", "h", "hpp", "cs", "php", "rb", "go", "rs", "swift", "kt", "m", "scala", "sh", "pl", "r", "ts", "dart",
 
-    # Web files
-    "html", "htm", "css", "js", "json", "xml", "yaml", "yml", "md", "jsp", "asp", "aspx", "tsv",
+        # Web files
+        "html", "htm", "css", "js", "json", "xml", "yaml", "yml", "md", "jsp", "asp", "aspx", "tsv",
 
-    # Data files
-    "csv", "tsv", "sql", "toml", "ini",
+        # Data files
+        "csv", "tsv", "sql", "toml", "ini",
 
-    #additional
-    "pdf", "json"
-    ]
+        #additional
+        "pdf", "json"
+        ]
 
-    uploaded_file = st.file_uploader("Upload PDF or TXT", type=text_extensions)
-    
-    if uploaded_file:
-        # PDF/text/JSON file reading logic, always convert to string
-        if uploaded_file.type == "application/pdf":
-            st.session_state.file_text = read_pdf(uploaded_file)
-        elif uploaded_file.type == "application/json":
-            st.session_state.file_text = json.dumps(json.load(uploaded_file), indent=2)
-        else:
-            st.session_state.file_text = uploaded_file.read().decode("utf-8", errors="ignore")
-        st.session_state.file_uploaded = True
-        st.session_state.filename = uploaded_file.name
-    
-        prompt = f"""
-        You are a helpful analysis chatbot. Review the uploaded file content below and provide a thoughtful summary. 
-        Use your judgment to highlight important insights and offer meaningful interpretations based on the data.
-
-        Uploaded file content:
-        {st.session_state.file_text}
-
-        Response:
-        """
-
-        streaming(prompt,"")
+        uploaded_file = st.file_uploader("Upload PDF or TXT", type=text_extensions)
         
+        if uploaded_file:
+            # PDF/text/JSON file reading logic, always convert to string
+            if uploaded_file.type == "application/pdf":
+                st.session_state.file_text = read_pdf(uploaded_file)
+            elif uploaded_file.type == "application/json":
+                st.session_state.file_text = json.dumps(json.load(uploaded_file), indent=2)
+            else:
+                st.session_state.file_text = uploaded_file.read().decode("utf-8", errors="ignore")
+            st.session_state.file_uploaded = True
+            st.session_state.filename = uploaded_file.name
+        
+            prompt = f"""
+            You are a helpful analysis chatbot. Review the uploaded file content below and provide a thoughtful summary. 
+            Use your judgment to highlight important insights and offer meaningful interpretations based on the data.
+
+            Uploaded file content:
+            {st.session_state.file_text}
+
+            Response:
+            """
+
+            streaming(prompt,"")
+            
 
 
-        # Inject custom CSS for button styling
-        st.markdown("""
-        <style>
-        div.stButton > button:first-child {
-            background-color: #4CAF50;  /* Green background */
-            color: white;               /* White text */
-            font-size: 18px;            /* Bigger font size */
-            height: 50px;               /* Taller button */
-            width: 200px;               /* Fixed width */
-            border-radius: 10px;        /* Rounded corners */
-            border: black;
-        }
+            # Inject custom CSS for button styling
+            st.markdown("""
+            <style>
+            div.stButton > button:first-child {
+                background-color: #4CAF50;  /* Green background */
+                color: white;               /* White text */
+                font-size: 18px;            /* Bigger font size */
+                height: 50px;               /* Taller button */
+                width: 200px;               /* Fixed width */
+                border-radius: 10px;        /* Rounded corners */
+                border: black;
+            }
 
-        div.stButton > button:first-child:hover {
-            background-color: #45a049;  /* Darker green on hover */
-        }
-        </style>
-        """, unsafe_allow_html=True)
+            div.stButton > button:first-child:hover {
+                background-color: #45a049;  /* Darker green on hover */
+            }
+            </style>
+            """, unsafe_allow_html=True)
 
-        # Add the styled button
-        st.button('ASK ME')
+            # Add the styled button
+            st.button('ASK ME')
 
 # After upload: hide uploader, display content
 else:
@@ -169,7 +170,7 @@ else:
 
 
     #-----------------promtingLogic------------------------------------
-    with st.spinner("Processing document..."):
+    with st.spinner("Thinking..."):
         if user_input:
             with st.chat_message("user"):
                 st.markdown(user_input)

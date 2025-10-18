@@ -6,6 +6,7 @@ import streamlit as st
 from io import StringIO
 from PyPDF2 import PdfReader
 import json
+import time
 
 #--------------udf-------------------------------------
 # Function to extract text from PDF
@@ -33,7 +34,7 @@ def streaming(prompt,user_input):
 
 #-----------------modelSelection---------------------------
 
-n = 4     # can be 1, 2, 3 or 4
+n = 3    # can be 1, 2, 3 or 4
 
 load_dotenv()
 api_key = os.getenv(f"OPENAI_API_KEY_{n}")  # Will fetch OPENAI_API_KEY_1, _2, or _3
@@ -81,12 +82,12 @@ for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-
 #--------------------------------------------input------------------------------------------
 
 # File input------------------
-with st.sidebar:
+if not st.session_state.file_uploaded:
 
+#File extensions------------------------------------------
     text_extensions = [
     # Plain text
     "txt", "log", "cfg", "ini", "conf", "bat", "cmd", "env",
@@ -104,101 +105,124 @@ with st.sidebar:
     "pdf", "json"
     ]
 
-    
-    st.header("📂 Upload File (Optional)")
     uploaded_file = st.file_uploader("Upload PDF or TXT", type=text_extensions)
-   
+    
     if uploaded_file:
+        # PDF/text/JSON file reading logic, always convert to string
         if uploaded_file.type == "application/pdf":
             st.session_state.file_text = read_pdf(uploaded_file)
-            
         elif uploaded_file.type == "application/json":
-            st.session_state.file_text = json.load(uploaded_file)
-            
-        elif uploaded_file.type == "text/":
-            stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
-            st.session_state.file_text = stringio.read()
-            
+            st.session_state.file_text = json.dumps(json.load(uploaded_file), indent=2)
         else:
-            st.session_state.file_text=uploaded_file.read().decode("utf-8")
-
-
-        st.success("✅ File uploaded and content added to context.")
-        st.markdown(f"**Content of uploaded file: {uploaded_file.name}**")
-        st.text_area("File content", st.session_state.file_text, height=300)
-
-
-#text input------------------------
-user_input = st.chat_input("Ask something...")
-
-
-
-#-----------------promtingLogic------------------------------------
-with st.spinner("Processing document..."):
-    if user_input:
-        with st.chat_message("user"):
-            st.markdown(user_input)
+            st.session_state.file_text = uploaded_file.read().decode("utf-8", errors="ignore")
+        st.session_state.file_uploaded = True
+        st.session_state.filename = uploaded_file.name
     
-        # Build prompt with previous chat
-        previous_chat = ""
-        for msg in st.session_state.chat_history[:-1]:  # exclude current user input
-            role = msg["role"]
-            content = msg["content"]
-            previous_chat += f"{role}: {content}\n"
-        
         prompt = f"""
-        You are a helpful and context-aware chatbot. 
-        Use the previous conversation to understand the user's intent and respond appropriately.
-    
-        Previous conversation:
-        {previous_chat}
-    
-        Content from uploaded file (if any):
+        You are a helpful analysis chatbot. Review the uploaded file content below and provide a thoughtful summary. 
+        Use your judgment to highlight important insights and offer meaningful interpretations based on the data.
+
+        Uploaded file content:
         {st.session_state.file_text}
-    
-        Current user input:
-        {user_input}
-    
-        Respond as the chatbot:"""
 
-#--------------------------NormalOutput-----------------------------------------------------------    
-        # # Get response from LLM
-        # response = llm.invoke(prompt)
-        # bot_reply = response.content if hasattr(response, 'content') else str(response)
-    
-        # # Append bot reply to chat history
-        # st.session_state.chat_history.append({"role": "user", "content": user_input})
-        # st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
+        Response:
+        """
 
-        # with st.chat_message("bot"):
-        #     st.markdown(bot_reply)
+        streaming(prompt,"")
         
 
 
-#-------------------------------STREAMING_output----------------------------------------------------------
-        # with st.chat_message("bot"):
-        #     placeholder = st.empty()          # ← this will be updated as chunks arrive
-        #     full_text = ""
+        # Inject custom CSS for button styling
+        st.markdown("""
+        <style>
+        div.stButton > button:first-child {
+            background-color: #4CAF50;  /* Green background */
+            color: white;               /* White text */
+            font-size: 18px;            /* Bigger font size */
+            height: 50px;               /* Taller button */
+            width: 200px;               /* Fixed width */
+            border-radius: 10px;        /* Rounded corners */
+            border: black;
+        }
 
-        #     import time
-        #     time.sleep(0.01)
+        div.stButton > button:first-child:hover {
+            background-color: #45a049;  /* Darker green on hover */
+        }
+        </style>
+        """, unsafe_allow_html=True)
 
-        #     for chunk in llm.stream(prompt):  
-        #         full_text += chunk.content
-        #         placeholder.markdown(full_text)
+        # Add the styled button
+        st.button('ASK ME')
 
-        #     # After streaming, store the full reply in history
-        #     st.session_state.chat_history.append({"role": "user", "content": user_input})
-        #     st.session_state.chat_history.append({"role": "bot", "content": full_text})
-        streaming(prompt,user_input)
-#-----------------------------------------END-------------------------------------------------------------
+# After upload: hide uploader, display content
+else:
+    with st.sidebar:
+        st.success(f"File '{st.session_state.filename}' uploaded and added to context.")
+        st.markdown("**Content of uploaded file:**")
+        st.text_area("File content", st.session_state.file_text, height=200)
+
+
+
+    #text input------------------------
+    user_input = st.chat_input("Ask something...")
+
+
+
+    #-----------------promtingLogic------------------------------------
+    with st.spinner("Processing document..."):
+        if user_input:
+            with st.chat_message("user"):
+                st.markdown(user_input)
+        
+            # Build prompt with previous chat
+            previous_chat = ""
+            for msg in st.session_state.chat_history[:-1]:  # exclude current user input
+                role = msg["role"]
+                content = msg["content"]
+                previous_chat += f"{role}: {content}\n"
+            
+            # Check if a new file was uploaded to decide prompt logic
+            prompt = f"""
+            You are a helpful and context-aware chatbot. 
+            Use the previous conversation to understand the user's intent and respond appropriately.
+        
+            Previous conversation:
+            {previous_chat}
+        
+            Current user input:
+            {user_input}
+        
+            Respond as the chatbot:
+            
+            
+            note-> user will ask question firstly uploaded document that you have sumraised and then based on that you will answer his question."""
+
+            st.session_state.new_file_uploaded = False
+
+    #--------------------------NormalOutput-----------------------------------------------------------    
+            # # Get response from LLM
+            # response = llm.invoke(prompt)
+            # bot_reply = response.content if hasattr(response, 'content') else str(response)
+        
+            # # Append bot reply to chat history
+            # st.session_state.chat_history.append({"role": "user", "content": user_input})
+            # st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
+
+            # with st.chat_message("bot"):
+            #     st.markdown(bot_reply)
+            
+
+
+    #-------------------------------STREAMING_output----------------------------------------------------------
+            streaming(prompt,user_input)
+    #-----------------------------------------END-------------------------------------------------------------
 
 
         
     
 
         
-        #debuging
-        print(st.session_state.chat_history)
-        print("\n")
-        #print(response)
+#debuging
+#print(st.session_state.chat_history)
+print("\n 1")
+print(st.session_state.file_text)

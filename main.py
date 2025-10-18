@@ -16,6 +16,21 @@ def read_pdf(file):
         text += page.extract_text()
     return text
 
+def streaming(prompt,user_input):
+    with st.chat_message("bot"):
+        placeholder = st.empty()          # ← this will be updated as chunks arrive
+        full_text = ""
+        
+        time.sleep(0.01)
+
+        for chunk in llm.stream(prompt):  
+            full_text += chunk.content
+            placeholder.markdown(full_text)
+
+        # After streaming, store the full reply in history
+        st.session_state.chat_history.append({"role": "user", "content": user_input})
+        st.session_state.chat_history.append({"role": "bot", "content": full_text})
+
 #-----------------modelSelection---------------------------
 
 n = 4     # can be 1, 2, 3 or 4
@@ -55,8 +70,10 @@ if "chat_history" not in st.session_state:
 
 if "file_uploaded" not in st.session_state:
     st.session_state.file_uploaded = False
+
 if "file_text" not in st.session_state:
     st.session_state.file_text = ""
+
 if "filename" not in st.session_state:
     st.session_state.filename = ""
 
@@ -107,7 +124,7 @@ with st.sidebar:
 
 
         st.success("✅ File uploaded and content added to context.")
-        st.markdown("**Content of uploaded file:**")
+        st.markdown(f"**Content of uploaded file: {uploaded_file.name}**")
         st.text_area("File content", st.session_state.file_text, height=300)
 
 
@@ -159,20 +176,21 @@ with st.spinner("Processing document..."):
 
 
 #-------------------------------STREAMING_output----------------------------------------------------------
-        with st.chat_message("bot"):
-            placeholder = st.empty()          # ← this will be updated as chunks arrive
-            full_text = ""
+        # with st.chat_message("bot"):
+        #     placeholder = st.empty()          # ← this will be updated as chunks arrive
+        #     full_text = ""
 
-            import time
-            time.sleep(0.01)
+        #     import time
+        #     time.sleep(0.01)
 
-            for chunk in llm.stream(prompt):  
-                full_text += chunk.content
-                placeholder.markdown(full_text)
+        #     for chunk in llm.stream(prompt):  
+        #         full_text += chunk.content
+        #         placeholder.markdown(full_text)
 
-            # After streaming, store the full reply in history
-            st.session_state.chat_history.append({"role": "user", "content": user_input})
-            st.session_state.chat_history.append({"role": "bot", "content": full_text})
+        #     # After streaming, store the full reply in history
+        #     st.session_state.chat_history.append({"role": "user", "content": user_input})
+        #     st.session_state.chat_history.append({"role": "bot", "content": full_text})
+        streaming(prompt,user_input)
 #-----------------------------------------END-------------------------------------------------------------
 
 

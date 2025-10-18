@@ -223,7 +223,7 @@ else:
     
 
         
-#debuging
-#print(st.session_state.chat_history)
-print("\n 1")
-print(st.session_state.file_text)
+# #debuging
+# #print(st.session_state.chat_history)
+# print("\n 1")
+# print(st.session_state.file_text)

@@ -53,8 +53,12 @@ st.title("🤖 AI Chatbot - TCS GenAI")
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
+if "file_uploaded" not in st.session_state:
+    st.session_state.file_uploaded = False
 if "file_text" not in st.session_state:
     st.session_state.file_text = ""
+if "filename" not in st.session_state:
+    st.session_state.filename = ""
 
 for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):

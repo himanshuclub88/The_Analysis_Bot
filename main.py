@@ -232,7 +232,10 @@ else:
             prompt = f"""
             You are a helpful and context-aware chatbot. 
             Use the previous conversation to understand the user's intent and respond appropriately.
-        
+
+            Uploaded file content:
+            {st.session_state.file_text}
+
             Previous conversation:
             {previous_chat}
         

@@ -4,7 +4,6 @@ import os
 import httpx
 from dotenv import load_dotenv
 import streamlit as st
-from io import StringIO
 from PyPDF2 import PdfReader
 import json
 import time

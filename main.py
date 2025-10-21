@@ -186,7 +186,7 @@ for message in st.session_state.chat_history:
 
 
 #--------------------------------------------input------------------------------------------
-
+previous_chat = ""
 # File input------------------
 if not st.session_state.file_uploaded:
     with st.spinner("Processing document..."):
@@ -288,37 +288,13 @@ else:
                 st.markdown(user_input)
         
             # Build prompt with previous chat
-            previous_chat = ""
-            for msg in st.session_state.chat_history[:-1]:  # exclude current user input
+            for msg in st.session_state.chat_history:
                 role = msg["role"]
-                content = msg["content"]
+                content = msg["content"].strip()
                 previous_chat += f"{role}: {content}\n"
             
             # Construct the prompt
-            prompt = f"""
-            You are a helpful and context-aware chatbot. 
-            Use the previous conversation to understand the user's intent and respond appropriately.
-
-            Uploaded file content:
-            {st.session_state.file_text}
-
-            Previous conversation:
-            {previous_chat}
-        
-            Current user input:
-            {user_input}
-        
-            Respond as the chatbot:
-            
-            
-            note-> user will ask question firstly uploaded document that you have sumraised and then based on that you will answer his question.
-            if user ask question related to uploaded document then answer based on that document only otherwise if user ask something else then answer based on your knowledge."""
-
-            # user = """
-            # {user_input}
-            # """
-
-            # promt = f"""
+            # prompt = f"""
             # You are a helpful and context-aware chatbot. 
             # Use the previous conversation to understand the user's intent and respond appropriately.
 
@@ -327,40 +303,53 @@ else:
 
             # Previous conversation:
             # {previous_chat}
-
+        
             # Current user input:
             # {user_input}
-
+        
             # Respond as the chatbot:
+            
+            
+            # note-> user will ask question firstly uploaded document that you have sumraised and then based on that you will answer his question.
+            # if user ask question related to uploaded document then answer based on that document only otherwise if user ask something else then answer based on your knowledge."""
 
-            # Note -> The user will ask questions about the uploaded document that you have summarized, and you should answer based on that document.
-            # If the user asks a question related to the uploaded document, answer using that document only.
-            # Otherwise, if the user asks something else, answer based on your general knowledge.
-            # """
+            user = """
+            {user_input}
+            """
 
-            # prompt = ChatPromptTemplate.from_messages(
-            #     [
-            #         ("system", promt),
-            #         ("human", user)
-            #     ]
-            # )
+            prompt = f"""
+            You are a helpful and context-aware chatbot. 
+            Use the previous conversation to understand the user's intent and respond appropriately.
 
+            Uploaded file content:
+            ```{st.session_state.file_text}```
+
+            Previous conversation:
+            ```{previous_chat}```
+
+            
+            Respond as the chatbot:
+
+            Note -> The user will ask questions about the uploaded document that you have summarized, and you should answer based on that document.
+            If the user asks a question related to the uploaded document, answer using that document only.
+            Otherwise, if the user asks something else, answer based on your general knowledge.
+            """
+
+            prompt = ChatPromptTemplate.from_messages(
+                [
+                    ("system", prompt),
+                    ("human", "{user_request}")
+                ]
+            )
+            chain = prompt | llm
             st.session_state.new_file_uploaded = False
 
-        #--------------------------NormalOutput-----------------------------------------------------------    
-            
-            #normal_output(prompt,user_input)
-
-        #-------------------------------STREAMING_output----------------------------------------------------------
-            streaming(prompt,user_input)
-        #-----------------------------------------END-------------------------------------------------------------
-
-
+            streaming_chain(chain, user_input)
         
     
 
         
 #debuging
-#print(st.session_state.chat_history)
-print("\n 1",st.session_state.temperature)
-#print(st.session_state.file_text)
+# print("session state chat history: \n",st.session_state.chat_history)
+# print("\n 1",st.session_state.temperature)
+print("previous chat----------------------------------------------------------: \n",previous_chat)

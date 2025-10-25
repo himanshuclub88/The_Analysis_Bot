@@ -1,4 +1,5 @@
 from langchain_openai import ChatOpenAI
+from langchain_community.chat_models import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 import os
 import httpx
@@ -105,7 +106,10 @@ models = {
     2: "z-ai/glm-4.5-air:free",
     3: "google/gemini-2.0-flash-exp:free",
     4: "deepseek/deepseek-r1-0528:free",
-    5: "openai/gpt-oss-20b:free"
+    5: "openai/gpt-oss-20b:free",
+    6: "gpt-oss:120b-cloud",
+    7: "deepseek-v3.1:671b-cloud",
+    8: "qwen3-vl:235b-cloud"
 }
 
 n = st.selectbox("Select a model:", options=list(models.keys()), format_func=lambda x: models[x])
@@ -117,14 +121,24 @@ api_key = os.getenv(f"OPENAI_API_KEY_{n}")  # Will fetch OPENAI_API_KEY_1, _2, o
 #-----------------modelInitiliazation
 client = httpx.Client(verify=False)
 
-llm = ChatOpenAI(
-base_url="https://openrouter.ai/api/v1",
-model = models.get(n),
-openai_api_key=api_key, 
-http_client =  client,
-temperature=st.session_state.temperature,
-streaming=True,
+if n>4:
+    llm = ChatOllama(
+        model=models.get(n),
+        base_url="http://127.0.0.1:11434",  # Ollama default endpoint
+        temperature=0.9,
+        streaming=True
 )
+else:
+    llm = ChatOpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    model = models.get(n),
+    openai_api_key=api_key, 
+    http_client =  client,
+    temperature=st.session_state.temperature,
+    streaming=True,
+)
+
+
 
 
 
